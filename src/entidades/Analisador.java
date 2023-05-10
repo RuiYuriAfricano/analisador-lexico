@@ -50,17 +50,32 @@ public class Analisador {
         TipoLex lex = new TipoLex();
         boolean end = false;
         boolean bb = false;
+
+        boolean outro = false;
         do {
             if (contarLinhasLidas < ficheiroLido.size()) {
                 textoDaLinha = ficheiroLido.get(contarLinhasLidas);
             }
+            if (contarLinhasLidas == ficheiroLido.size() && !textoLexema.equals("")) {
+                contarLinhasLidas--;
+            }
+
             switch (estado) {
                 // Estado inicial
                 case 0: {
                     // Só vai ler um simbolo, como se fosse "char lerChar";
-                    lerChar = Character.toString(textoDaLinha.charAt(indice));
+
+                    if (contarLinhasLidas != ficheiroLido.size()) {
+                        lerChar = Character.toString(textoDaLinha.charAt(indice));
+                    }
+
+                    if (Character.isWhitespace(lerChar.charAt(0))) {
+                        indice++;
+                        break;
+                    }
+
                     // Variavel
-                    if (Character.isLowerCase(lerChar.charAt(0)) || lerChar.charAt(0) == '_') {
+                    if (Character.isLetter(lerChar.charAt(0)) || lerChar.charAt(0) == '_') {
                         estado = 1;
 
                         if (textoDaLinha.length() > 1) {
@@ -189,7 +204,8 @@ public class Analisador {
                     if (lerChar.charAt(0) == '/') {
                         estado = 8;
 
-                        if (textoDaLinha.length() > 1) {
+                        if (textoDaLinha.substring(indice, textoDaLinha.length()).length() > 1) {
+
                             textoLexema += lerChar;
                             indice++;
                         }
@@ -226,7 +242,7 @@ public class Analisador {
                     }
 
                     // operador relacional e um de atribuição
-                    if (lerChar.charAt(0) == '=' || lerChar.charAt(0) == '!' || lerChar.charAt(0) == '>' || lerChar.charAt(0) == '<') {
+                    if (lerChar.charAt(0) == '=' || lerChar.charAt(0) == '>' || lerChar.charAt(0) == '<') {
                         estado = 32;
 
                         if (textoDaLinha.length() > 1) {
@@ -246,22 +262,34 @@ public class Analisador {
 
                     }
                     if (lerChar.charAt(0) == '|') {
-                        estado = 35;
 
-                        if (textoDaLinha.length() > 1) {
-                            textoLexema += lerChar;
-                            indice++;
-                        }
+                            estado = 35;
+
+                            if (textoDaLinha.length() > 1) {
+                                textoLexema += lerChar;
+                                indice++;
+                            }
+                        
 
                     }
 
                     if (lerChar.charAt(0) == '!') {
+                         if (textoDaLinha.substring(indice, textoDaLinha.length()).length() > 0 && Character.toString(textoDaLinha.charAt(indice + 1)).charAt(0) == '=') {
+                            textoLexema += lerChar;
+                            indice++;
+                            lerChar = Character.toString(textoDaLinha.charAt(indice));
+                            textoLexema += lerChar;
+                            if (lerChar.charAt(0) == '=') {
+                                estado = 33;
+                            }
+                        } else {
                         estado = 36;
 
                         if (textoDaLinha.length() > 1) {
                             textoLexema += lerChar;
                             indice++;
                         }
+                         }
 
                     }
 
@@ -279,38 +307,32 @@ public class Analisador {
                 }
                 // Estado 1
                 case 1: {
-                    boolean erro = false;
-                    lerChar = Character.toString(textoDaLinha.charAt(indice));
+                    if (indice < textoDaLinha.length()) {
+                        lerChar = Character.toString(textoDaLinha.charAt(indice));
+                    }
                     for (int i = indice; i < textoDaLinha.length(); i++) {
                         if (Character.isLetter(lerChar.charAt(0)) || lerChar.charAt(0) == '_'
                                 || Character.isDigit(lerChar.charAt(0))) {
                             textoLexema += lerChar;
                             indice++;
-                        } else if (Character.isWhitespace(lerChar.charAt(0)) || lerChar.charAt(0) == '+' || lerChar.charAt(0) == '-'
-                                || lerChar.charAt(0) == '*' || lerChar.charAt(0) == '/' || lerChar.charAt(0) == '+' || lerChar.charAt(0) == '('
-                                || lerChar.charAt(0) == '}' || lerChar.charAt(0) == ']' || lerChar.charAt(0) == '%' | lerChar.charAt(0) == '>' || lerChar.charAt(0) == '='
-                                || lerChar.charAt(0) == '<' || lerChar.charAt(0) == '!' || lerChar.charAt(0) == '&' || lerChar.charAt(0) == '|' || lerChar.charAt(0) == ':'
-                                || lerChar.charAt(0) == '?' || lerChar.charAt(0) == '.' || lerChar.charAt(0) == ',' || lerChar.charAt(0) == ';' || lerChar.charAt(0) == '{'
-                                || lerChar.charAt(0) == '[' || lerChar.charAt(0) == ')') {
-                            i = textoDaLinha.length();
-                            indice++;
                         } else {
-                            erro = true;
-                            textoLexema += lerChar;
+                            i = textoDaLinha.length();
+                            outro = true;
                         }
 
                         if (i + 1 < textoDaLinha.length()) {
                             lerChar = Character.toString(textoDaLinha.charAt(indice));
                         }
                     }
-                    if (erro) {
-                        contarLinhasLidas++;
-                        System.out.println("Erro na linha: " + contarLinhasLidas + " variavel inválida: " + textoLexema);
-                        return null;
-                    } else {
-                        guardarLinha = contarLinhasLidas;
+                    guardarLinha = contarLinhasLidas;
+                    PalavrasReservadas kw = new PalavrasReservadas();
+                    if(kw.reservedWords.indexOf(textoLexema) > -1){
+                        estado = 200;
+                    }else{
                         estado = 2;
                     }
+                    
+                    
                     break;
                 }
                 // Estado 2
@@ -324,6 +346,26 @@ public class Analisador {
                         lex.setToken(Token.TK_ID);
                         lex.setLinha(guardarLinha + 1);
                         result.add(lex);
+                        
+                        textoLexema = "";
+                        end = true;
+
+                    }
+
+                    break;
+                }
+                // Estado 200 palavra reservada
+                case 200: {
+                    if (end == true) {
+                        estado = 0;
+                        end = false;
+                    } else {
+                        lex = new TipoLex();
+                        lex.setLexema(textoLexema);
+                        lex.setToken(Token.TK_KW);
+                        lex.setLinha(guardarLinha + 1);
+                        result.add(lex);
+                        
                         textoLexema = "";
                         end = true;
 
@@ -345,17 +387,8 @@ public class Analisador {
                             indice++;
                             i = textoDaLinha.length();
                             aux = true;// vai para o estado 4
-                        } else if (Character.isWhitespace(lerChar.charAt(0)) || lerChar.charAt(0) == '+' || lerChar.charAt(0) == '-'
-                                || lerChar.charAt(0) == '*' || lerChar.charAt(0) == '/' || lerChar.charAt(0) == '+' || lerChar.charAt(0) == '(' || lerChar.charAt(0) == ')'
-                                || lerChar.charAt(0) == '}' || lerChar.charAt(0) == ']' || lerChar.charAt(0) == '%' | lerChar.charAt(0) == '>' || lerChar.charAt(0) == '='
-                                || lerChar.charAt(0) == '<' || lerChar.charAt(0) == '!' || lerChar.charAt(0) == '&' || lerChar.charAt(0) == '|' || lerChar.charAt(0) == ':'
-                                || lerChar.charAt(0) == '?' || lerChar.charAt(0) == ',' || lerChar.charAt(0) == ';') {
-
-                            indice++;
-                            i = textoDaLinha.length();
                         } else {
-                            erro = true;
-                            textoLexema += lerChar;
+                            i = textoDaLinha.length(); //para evitar loop infinito
                         }
 
                         if (i + 1 < textoDaLinha.length()) {
@@ -369,11 +402,6 @@ public class Analisador {
 
                     } else {
                         estado = 7;
-                        if (erro) {
-                            contarLinhasLidas++;
-                            System.out.println("Erro na linha: " + contarLinhasLidas + " o número inteiro está mal definido " + textoLexema);
-                            return null;
-                        }
                     }
                     break;
                 }
@@ -470,9 +498,8 @@ public class Analisador {
                 // Estado 8
                 case 8: {
                     lerChar = Character.toString(textoDaLinha.charAt(indice));
-                    if (lerChar.charAt(0) == '/') {//Comentario inline
-                        //textoLexema += lerChar;
-                        //indice++;
+                    int primeiroBarra = textoDaLinha.indexOf("/");
+                    if (lerChar.charAt(0) == '/' && textoDaLinha.substring(primeiroBarra, textoDaLinha.length()).length() > 1) {//Comentario inline
                         estado = 9;
                     } else if (lerChar.charAt(0) == '*') {//Comentario multi line
                         textoLexema += lerChar;
@@ -516,7 +543,10 @@ public class Analisador {
 
                 // Estado 10
                 case 10: {
-                    lerChar = Character.toString(textoDaLinha.charAt(indice));
+                    if (indice != textoDaLinha.length()) {
+                        lerChar = Character.toString(textoDaLinha.charAt(indice));
+                    }
+
                     for (int i = indice; i < textoDaLinha.length(); i++) {
 
                         textoLexema += lerChar;
@@ -648,7 +678,7 @@ public class Analisador {
                             textoDaLinha = ficheiroLido.get(contarLinhasLidas);
                             i = indice;
                             alterou = true;
-                            textoLexema += "\n";
+                            textoLexema += "\n\t\t\t\t\t\t\t";
                         }
 
                         if (i + 1 < textoDaLinha.length()) {
@@ -859,7 +889,7 @@ public class Analisador {
                         indice++;
                         estado = 30;
                     }
-
+                    System.out.println("lexema: "+textoLexema);
                     guardarLinha = contarLinhasLidas;
 
                     break;
@@ -1035,6 +1065,13 @@ public class Analisador {
                     if (textoDaLinha.substring(indice, textoDaLinha.length()).startsWith("include")) {
                         textoLexema += "include";
                         indice += 7;
+                        lerChar = Character.toString(textoDaLinha.charAt(indice));
+                        if(Character.isWhitespace(lerChar.charAt(0))){
+                            textoLexema += lerChar;
+                            indice++;
+                        }
+                            
+                        
                         estado = 41;
                     } else if (textoDaLinha.substring(indice, textoDaLinha.length()).startsWith("endif")) {
                         textoLexema += "endif";
@@ -1582,9 +1619,7 @@ public class Analisador {
                 if (contarLinhasLidas + 1 < ficheiroLido.size()) {
                     indice = 0;
                 }
-
                 contarLinhasLidas++;
-
             }
 
         } while (contarLinhasLidas <= ficheiroLido.size());
@@ -1594,7 +1629,6 @@ public class Analisador {
         lex.setLexema("");
         lex.setLinha(++guardarLinha);
         result.add(lex);
-        //System.out.println("SIZE: " + result.size());
         return result;
     }
 

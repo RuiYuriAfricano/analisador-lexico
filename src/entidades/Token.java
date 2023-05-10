@@ -6,13 +6,13 @@ package entidades;
  */
 public class Token {
 
-    public static final String TK_ID = "Identificador/Variável";
+    public static final String TK_ID = "Identificador";
     public static final String TK_CM = "Comentário";
     public static final String TK_DIR = "Directiva";
     public static final String TK_AP = "Abre parenteses";
     public static final String TK_FP = "Fecha parenteses";
     public static final String TK_AC = "Abre chavetas";
-    public static final String TK_FC = "Abre chavetas";
+    public static final String TK_FC = "Fecha chavetas";
     public static final String TK_APR = "Abre parenteses reto";
     public static final String TK_FPR = "Fecha parenteses reto";
     public static final String TK_VIRG = "Vírgula";
@@ -28,5 +28,6 @@ public class Token {
     public static final String TK_OPATB = "Operador atribuição";
     public static final String TK_NUMINT = "Número inteiro";
     public static final String TK_NUMREAL = "Número real";
+    public static final String TK_KW = "Palavra reservada";
     public static final String TK_FIM = "Final da execução";
 }
